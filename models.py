@@ -30,7 +30,7 @@ class CaracteristicasOrganolepticas(str, Enum):
 class Operativo(Base):
     __tablename__ = "operativo"
     id : Mapped[int] = mapped_column(primary_key=True)
-    numero : Mapped[int] = mapped_column(nullable=False)
+    numero : Mapped[int] = mapped_column(nullable=False, unique=True)
     tipo_operativo : Mapped[TiposOperativos] = mapped_column(SQLEnum(TiposOperativos, name = "tipo_operativo_enum"), nullable=False)
     fecha : Mapped[date] = mapped_column(Date, nullable=False)
     created_at : Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -91,7 +91,6 @@ class Provincia(Base):
 
 class Canton(Base):
     __tablename__ = "canton"
-
     id: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String, nullable=False)
     provincia_id: Mapped[int] = mapped_column(ForeignKey("provincia.id"), nullable=False)
@@ -284,4 +283,3 @@ class Notificacion(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
-Base.metadata.create_all(engine)
