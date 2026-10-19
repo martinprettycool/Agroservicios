@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 
-from dataset import engine, get_session
+from dataset import get_session
 from datetime import date, datetime
 
 app = FastAPI()
@@ -207,7 +207,7 @@ def get_operativo(operativo_id : int, session : Session = Depends(get_session)):
         raise HTTPException(404, detail="Este operativo no existe")
     return operativo
 
-@app.post("/operativos/{op_id}/controles", response_model=ResponseControl)
+@app.post("/operativos/{op_id}/controles", response_model=ResponseControl, status_code=status.HTTP_201_CREATED)
 def crear_control(op_id: int, control : CreateControl, session: Session = Depends(get_session)):
     operativo = session.get(Operativo, op_id)
     if operativo is None:
@@ -255,7 +255,7 @@ def get_control(control_id: int, session: Session = Depends(get_session)):
         raise HTTPException(404, f'El control {control_id} no existe')
     return control
 
-@app.post("/controles/{control_id}/muestra", response_model=MuestraResponse)
+@app.post("/controles/{control_id}/muestra", response_model=MuestraResponse, status_code=status.HTTP_201_CREATED)
 def create_muestra(control_id: int, muestra: CreateMuestra, session: Session = Depends(get_session)):
     control = session.get(Control, control_id)
     if control is None:
@@ -275,7 +275,7 @@ def create_muestra(control_id: int, muestra: CreateMuestra, session: Session = D
         raise HTTPException(400, detail='No fue posible crear la muestra por una restricción de integridad')
     return new_muestra
     
-@app.post("/muestras/{muestra_id}/analisis-campo", response_model=AnalisisResponse)
+@app.post("/muestras/{muestra_id}/analisis-campo", response_model=AnalisisResponse, status_code=status.HTTP_201_CREATED)
 def create_anaphlisis_campo(muestra_id : int, analisis : CreateAnalisis, session : Session = Depends(get_session)):
     muestra = session.get(Muestra, muestra_id)
     if muestra is None:
@@ -307,7 +307,7 @@ def create_anaphlisis_campo(muestra_id : int, analisis : CreateAnalisis, session
         raise HTTPException(400, 'No fue posible crear el analisis por una restricción de integridad')
     return new_analisis
     
-@app.post("/controles/{control_id}/decomiso", response_model=DecomisoResponse)
+@app.post("/controles/{control_id}/decomiso", response_model=DecomisoResponse, status_code=status.HTTP_201_CREATED)
 def create_decomiso(control_id : int, decomiso : CreateDecomiso, session : Session = Depends(get_session)):
     control = session.get(Control, control_id)
     if control is None:
@@ -339,7 +339,7 @@ def create_decomiso(control_id : int, decomiso : CreateDecomiso, session : Sessi
     return new_decomiso
 
     
-@app.post("/controles/{control_id}/notificaciones", response_model=NotiResponse)
+@app.post("/controles/{control_id}/notificaciones", response_model=NotiResponse, status_code=status.HTTP_201_CREATED)
 def create_notificacion(control_id : int, noti : CreateNotificacion, session : Session = Depends(get_session)):
         control = session.get(Control, control_id)
         if control is None:
@@ -362,8 +362,8 @@ def create_notificacion(control_id : int, noti : CreateNotificacion, session : S
         except IntegrityError:
             session.rollback()
             raise HTTPException(
-                400,
-                detail='No fue posible crear el decomiso por una restricción de integridad'
+                409,
+                detail='No fue posible crear la notificacion por una restricción de integridad'
             )
         return new_noti
 
