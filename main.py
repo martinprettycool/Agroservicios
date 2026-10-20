@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from fastapi import FastAPI, HTTPException, status, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from models import TiposOperativos, Operativo, Control, TipoLugar, Parroquia, Muestra, CaracteristicasOrganolepticas, ResultadoCualitativo, AnalisisCampo, Decomiso, TipoNotificacion, EstadoNotificacion, Notificacion, Provincia, Canton, Parroquia
@@ -13,6 +14,19 @@ from dataset import get_session
 from datetime import date, datetime
 
 app = FastAPI()
+
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class ParroquiaResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
