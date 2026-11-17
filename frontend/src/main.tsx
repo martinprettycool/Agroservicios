@@ -1,24 +1,24 @@
-import { StrictMode } from 'react';
+﻿import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { OperativosPage } from './pages/OperativosPage';
+import { NuevoOperativoPage } from './pages/NuevoOperativoPage';
+import { OperativoDetailPage } from './pages/OperativoDetailPage';
+import { AppLayout } from './components/AppLayout';
 import './styles.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <header className="site-header">
-        <div className="container brand">
-          <span className="brand-name">AgroServicios</span>
-          <span className="brand-subtitle">Gestión de Inocuidad de Leche Cruda</span>
-        </div>
-      </header>
-      <main className="container main-content">
-        <Routes>
+      <Routes>
+        <Route element={<AppLayout />}>
           <Route path="/" element={<Navigate to="/operativos" replace />} />
           <Route path="/operativos" element={<OperativosPage />} />
-        </Routes>
-      </main>
+          <Route path="/operativos/nuevo" element={<NuevoOperativoPage />} />
+          <Route path="/operativos/:operativoId" element={<OperativoDetailPage />} />
+          <Route path="/operativos/:operativoId/registro" element={<NuevoOperativoPage />} />
+        </Route>
+      </Routes>
     </BrowserRouter>
   </StrictMode>,
 );

@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from models import TiposOperativos, Operativo, Control, TipoLugar, Parroquia, Muestra, CaracteristicasOrganolepticas, ResultadoCualitativo, AnalisisCampo, Decomiso, TipoNotificacion, EstadoNotificacion, Notificacion, Provincia, Canton, Parroquia
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload, raiseload
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
@@ -189,6 +189,29 @@ class ResponseControl(BaseModel):
 
 
 
+class CantonDetalleResponse(CantonResponse):
+    provincia: ProvinciaResponse
+
+
+class ParroquiaDetalleResponse(ParroquiaResponse):
+    canton: CantonDetalleResponse
+
+
+class MuestraDetalleResponse(MuestraResponse):
+    analisis_campo: AnalisisResponse | None
+
+
+class ControlDetalleResponse(ResponseControl):
+    parroquia: ParroquiaDetalleResponse
+    muestra: MuestraDetalleResponse | None
+    decomiso: DecomisoResponse | None
+    notificaciones: list[NotiResponse]
+
+
+class OperativoDetalleResponse(OpResponse):
+    controles: list[ControlDetalleResponse]
+
+
 @app.post("/operativos", response_model=OpResponse, status_code=status.HTTP_201_CREATED)
 def crear_operativo(op : CreateOp, session : Session = Depends(get_session)):
     new_op = Operativo(
@@ -220,6 +243,42 @@ def get_operativo(operativo_id : int, session : Session = Depends(get_session)):
     if operativo is None:
         raise HTTPException(404, detail="Este operativo no existe")
     return operativo
+
+@app.get(
+    "/operativos/{operativo_id}/detalle",
+    response_model=OperativoDetalleResponse,
+    responses={404: {"description": "El operativo no existe"}},
+)
+def get_operativo_detalle(operativo_id: int, session: Session = Depends(get_session)):
+    """Estado persistido del registro; controles ordenados por created_at e id.
+
+    No deriva ni persiste un estado de negocio. El cliente puede reanudar el
+    flujo inicial usando el primer control y sus relaciones existentes.
+    """
+    stmt = (
+        select(Operativo)
+        .where(Operativo.id == operativo_id)
+        .options(
+            selectinload(Operativo.controles).options(
+                joinedload(Control.muestra).joinedload(Muestra.analisis_campo),
+                joinedload(Control.decomiso),
+                selectinload(Control.notificaciones),
+                joinedload(Control.parroquia)
+                .joinedload(Parroquia.canton)
+                .joinedload(Canton.provincia),
+            ),
+            raiseload("*"),
+        )
+    )
+    operativo = session.scalar(stmt)
+    if operativo is None:
+        raise HTTPException(404, detail="Este operativo no existe")
+
+    # Materializar la respuesta dentro de la Session: sin lazy loads posteriores.
+    detalle = OperativoDetalleResponse.model_validate(operativo)
+    detalle.controles.sort(key=lambda control: (control.created_at, control.id))
+    return detalle
+
 
 @app.post("/operativos/{op_id}/controles", response_model=ResponseControl, status_code=status.HTTP_201_CREATED)
 def crear_control(op_id: int, control : CreateControl, session: Session = Depends(get_session)):
